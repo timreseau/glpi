@@ -1,0 +1,26 @@
+---
+
+- name: Testing if Netdata is installed
+  stat: path=/etc/init.d/netdata
+  register: netdata_stat
+  tags: netdata
+
+- name: Download Netdata
+  get_url:
+    dest: /tmp/kickstart.sh
+    url: https://my-netdata.io/kickstart.sh
+    validate_certs: no
+  when:  netdata_stat.stat.exists == false
+  tags: netdata
+
+- name: Update cache
+  apt:
+    update_cache: true
+    allow_unauthenticated: true
+  tags: netdata
+
+- name: Install netdata
+  become: yes
+  command: bash /tmp/kickstart.sh --dont-wait
+  when:  netdata_stat.stat.exists == false
+  tags: netdata

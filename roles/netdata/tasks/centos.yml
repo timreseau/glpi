@@ -1,0 +1,35 @@
+---
+
+- name: Testing if Netdata is installed
+  stat:
+    path: /etc/netdata
+  register: netdata_stat
+
+- name : Upgrade some packages if needed
+  yum:
+    name: "{{ item }}"
+    state: latest
+  with_items:
+    - python
+    - epel-release 
+    - curl
+    - nss
+    - nss-util
+    - nspr
+  when: netdata_stat.stat.exists == false
+
+- name: Installing NetData
+  become: yes
+  block: 
+    - get_url:
+        dest: /tmp/kickstart.sh
+        url: https://my-netdata.io/kickstart.sh
+        validate_certs: no
+
+    - command: bash /tmp/kickstart.sh --dont-wait
+  when: netdata_stat.stat.exists == false
+
+- name: Creating firewall rule for NetData
+  shell: "firewall-cmd --zone=public --permanent --add-port=19999/tcp && firewall-cmd --reload"
+  when:  netdata_stat.stat.exists == false
+  failed_when: false

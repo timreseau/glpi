@@ -1,0 +1,15 @@
+---
+# defaults file for glpi
+
+glpi_version: 9.4.2
+glpi_archive_name: glpi-{{ glpi_version }}.tgz
+glpi_download_url: https://github.com/glpi-project/glpi/releases/download/{{ glpi_version }}/{{ glpi_archive_name }}
+glpi_extract_location: /var/www/html/
+glpi_install_script: "{{ glpi_extract_location }}glpi/bin/console"
+glpi_db_host: 127.0.0.1
+glpi_db_port: 3306
+glpi_db_name: glpi
+glpi_db_user: glpi
+glpi_db_passwd: glpi
+glpi_language: fr_FR
+glpi_force_db_install: false

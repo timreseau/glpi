@@ -1,0 +1,58 @@
+---
+# tasks file for glpi
+
+- name: GLPI | Test if GLPI archive is already present 
+  stat:
+    path: /tmp/{{ glpi_archive_name }}
+  register: result
+  tags: glpi
+
+- name: GLPI | Download GLPI archive
+  get_url:
+    dest: /tmp/
+    url: "{{ glpi_download_url }}"
+    validate_certs: false
+  when: result.stat.exists == false
+  tags: glpi
+
+- name: GLPI | Test if GLPI is installed at {{ glpi_extract_location }} 
+  stat:
+    path: "{{ glpi_extract_location }}/glpi"
+  register: result
+  tags: glpi
+
+- name: GLPI | Unzip GLPI archive
+  unarchive:
+    dest: "{{ glpi_extract_location }}"
+    src: /tmp/{{ glpi_archive_name }}
+    remote_src: yes
+  when: result.stat.exists == false
+  tags: glpi
+
+- name: GLPI | Fix access rights on config directory
+  file:
+    path: "{{ glpi_extract_location }}/glpi/config"
+    mode: 0755
+    owner: www-data
+    group: www-data
+    recurse: yes
+  tags: glpi
+
+- name: GLPI | Fix access rights on files directory
+  file:
+    path: "{{ glpi_extract_location }}/glpi/files"
+    mode: 0755
+    owner: www-data
+    group: www-data
+    recurse: yes
+  tags: glpi
+
+- name: GLPI | Configure Database
+  command: "php {{ glpi_install_script }} db:install -n -q -H {{ glpi_db_host }} -P {{ glpi_db_port }} -d {{ glpi_db_name }} -u {{ glpi_db_user }} -p {{ glpi_db_passwd }} -L {{ glpi_language }}"
+  tags: glpi
+
+- name: GLPI | Protect install directory
+  template:
+    src: .htaccess.j2
+    dest: "{{ glpi_extract_location }}/glpi/install/.htaccess"
+  tags: glpi

@@ -1,0 +1,94 @@
+- hosts: serveurs-glpi
+  gather_facts: yes
+  #debugger: never
+  become: true
+
+  tasks: 
+
+  - include_role:
+      name: ntp
+  
+  - include_role:
+      name: ansible-role-apache
+    vars:
+      apache_listen_ip: "*"
+      apache_listen_port: 80
+      apache_listen_port_ssl: 443
+      apache_remove_default_vhost: true
+      apache_create_vhosts: true
+      apache_mods_enabled:
+        - rewrite.load
+        - ssl.load
+        - proxy.load
+      apache_vhosts:
+        - servername: "glpi"
+          documentroot: "/var/www/html/glpi"
+          extra_parameters: |
+            ProxyPassMatch ^/(.*\.php(/.*)?)$ "fcgi://127.0.0.1:9000/var/www/html/glpi"
+
+  - include_role:
+      name: ansible-role-php
+    vars: 
+      php_default_version_debian: 7.2 
+      php_use_managed_ini: true
+      php_memory_limit: 64M 
+      php_file_uploads: on
+      max_execution_time: 600
+      register_globals: off
+      magic_quotes_sybase: off
+      session_use_trans_sid: 0
+      php_enable_php_fpm: true
+      php_fpm_listen: "127.0.0.1:9000"
+      php_fpm_listen_allowed_clients: "127.0.0.1"
+      php_fpm_pm_max_children: 50
+      php_fpm_pm_start_servers: 5
+      php_fpm_pm_min_spare_servers: 5
+      php_fpm_pm_max_spare_servers: 5
+      php_packages:
+        - php7.2-fpm
+        - php7.2-curl
+        - php7.2-fileinfo
+        - php7.2-gd  
+        - php7.2-json
+        - php7.2-mbstring
+        - php7.2-mysqli
+        - php7.2-simplexml
+        - php7.2-xml 
+        - php7.2-cli
+        - php7.2-imap
+        - php7.2-ldap   
+        - openssl
+        - php7.2-xmlrpc
+        - php-apcu-bc  
+        - php7.2-mysql
+  
+  - include_role:
+      name: ansible-role-apache-php-fpm
+
+  - include_role:
+      name: ansible-role-mysql
+    vars:
+      mysql_root_home: /home/ansible
+      mysql_root_username: ansible
+      mysql_root_password: azertysio  
+      mysql_enabled_on_startup: true
+      mysql_databases:
+        - name: glpi
+      mysql_users: 
+        - name: glpi
+          host: "%"
+          password: azertysio
+          priv: "glpi.*:ALL"
+
+  - include_role:
+      name: glpi
+    vars: 
+      glpi_version: 9.4.2
+      glpi_db_host: 127.0.0.1
+      glpi_db_port: 3306
+      glpi_db_name: glpi
+      glpi_db_user: glpi
+      glpi_db_passwd: azertysio
+      glpi_language: fr_FR
+      glpi_force_db_install: false
+    tags: glpi
